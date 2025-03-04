@@ -1,23 +1,22 @@
-from common_utils import load_and_preprocess_data, evaluate_model
+import numpy as np
 from tensorflow.keras.applications import DenseNet121
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from sklearn.model_selection import train_test_split
+from common_utils import prompt_user, load_dataset, evaluate_model, split_data, get_data_paths
+
+# Prompt user for subset size and preprocessed data preference
+subset_size, use_preprocessed = prompt_user()
+
+# Get dataset paths
+data_dir, metadata_path = get_data_paths()
 
 # Load and preprocess the dataset
-data_dir = "C://Users//Anesu Kabuku//PycharmProjects//PythonProject//Datasets//ph2_dataset"
-image_size = (224, 224)
-
-# Load and preprocess the dataset
-data = load_and_preprocess_data(data_dir, image_size)
-
-if data.empty:
-    raise ValueError("No valid images found in the specified directory.")
+X, y, label_encoder = load_dataset(data_dir, metadata_path, subset_size, use_preprocessed, image_size=(224, 224))
 
 # Split the dataset into training and testing sets
-train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = split_data(X, y)
 
 # Data augmentation
 datagen = ImageDataGenerator(
@@ -29,23 +28,8 @@ datagen = ImageDataGenerator(
 )
 
 # Create data generators for training and testing
-train_generator = datagen.flow_from_dataframe(
-    dataframe=train_data,
-    x_col='image_path',
-    y_col='label',
-    target_size=image_size,
-    batch_size=32,
-    class_mode='binary'  # Use 'binary' for binary classification
-)
-
-test_generator = datagen.flow_from_dataframe(
-    dataframe=test_data,
-    x_col='image_path',
-    y_col='label',
-    target_size=image_size,
-    batch_size=32,
-    class_mode='binary'  # Use 'binary' for binary classification
-)
+train_generator = datagen.flow(X_train, y_train, batch_size=32)
+test_generator = datagen.flow(X_test, y_test, batch_size=32)
 
 # Load the DenseNet model with pre-trained ImageNet weights
 base_model = DenseNet121(weights='imagenet', include_top=False)
@@ -54,23 +38,23 @@ base_model = DenseNet121(weights='imagenet', include_top=False)
 x = base_model.output
 x = GlobalAveragePooling2D()(x)
 x = Dense(1024, activation='relu')(x)
-predictions = Dense(1, activation='sigmoid')(x)
+predictions = Dense(len(np.unique(y)), activation='softmax')(x)
 
 # Create the final model
 model = Model(inputs=base_model.input, outputs=predictions)
 
 # Compile the model
-model.compile(optimizer=Adam(), loss='binary_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=Adam(), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 # Train the model
-model.fit(train_generator, steps_per_epoch=len(train_data)//32, epochs=10)
+model.fit(train_generator, steps_per_epoch=len(X_train) // 32, epochs=10)
 
 # Evaluate the model
 predictions = model.predict(test_generator)
-predictions = (predictions > 0.5).astype(int)
+predictions = np.argmax(predictions, axis=1)
 
 # Calculate evaluation metrics
-accuracy, precision, recall, f1, conf_matrix = evaluate_model(test_data['label'], predictions)
+accuracy, precision, recall, f1, conf_matrix = evaluate_model(y_test, predictions)
 
 print("Accuracy: {:.2f}".format(accuracy))
 print("Precision: {:.2f}".format(precision))
@@ -80,5 +64,5 @@ print("Confusion Matrix:")
 print(conf_matrix)
 
 # Save the model for later use
-model.save("densenet_ph2_model.keras")
-print("Model saved as densenet_ph2_model.keras")
+model.save(f"densenet_model_{subset_size}.keras")
+print(f"Model saved as densenet_model_{subset_size}.keras in Keras")

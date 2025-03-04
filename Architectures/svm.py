@@ -1,22 +1,21 @@
-# Import necessary libraries
-import os
-import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
-from common_utils import load_and_preprocess_data, evaluate_model
+import joblib
+from common_utils import prompt_user, load_dataset, evaluate_model, split_data, get_data_paths
+
+# Prompt user for subset size and preprocessed data preference
+subset_size, use_preprocessed = prompt_user()
+
+# Get dataset paths
+data_dir, metadata_path = get_data_paths()
 
 # Load and preprocess the dataset
-data_dir = "C://Users//Anesu Kabuku//PycharmProjects//PythonProject//Datasets//ph2_dataset"
-image_size = (64, 64)
-
-# Load and preprocess the dataset
-X, y = load_and_preprocess_data(data_dir, image_size)
+X, y, label_encoder = load_dataset(data_dir, metadata_path, subset_size, use_preprocessed, image_size=(64, 64))
 
 # Flatten the images for SVM
 X = X.reshape(len(X), -1)
 
 # Split the dataset into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = split_data(X, y)
 
 # Initialize the SVM model
 svm_model = SVC(kernel='linear')  # You can experiment with different kernels like 'rbf', 'poly', etc.
@@ -38,6 +37,5 @@ print("Confusion Matrix:")
 print(conf_matrix)
 
 # Save the model for later use
-import joblib
-joblib.dump(svm_model, "svm_ph2_model.pkl")
-print("Model saved as svm_ph2_model.pkl")
+joblib.dump(svm_model, f"svm_model_{subset_size}.pkl")
+print(f"Model saved as svm_model_{subset_size}.pkl")

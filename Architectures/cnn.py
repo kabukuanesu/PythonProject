@@ -1,25 +1,25 @@
-# Import necessary libraries
-import os
 import numpy as np
-from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from common_utils import load_and_preprocess_data, evaluate_model
+from common_utils import prompt_user, load_dataset, evaluate_model, split_data, get_data_paths
+
+# Prompt user for subset size and preprocessed data preference
+subset_size, use_preprocessed = prompt_user()
+
+# Get dataset paths
+data_dir, metadata_path = get_data_paths()
 
 # Load and preprocess the dataset
-data_dir = "C://Users//Anesu Kabuku//PycharmProjects//PythonProject//Datasets//ph2_dataset"
-image_size = (64, 64)
-
-# Load and preprocess the dataset
-X, y = load_and_preprocess_data(data_dir, image_size)
+X, y, label_encoder = load_dataset(data_dir, metadata_path, subset_size, use_preprocessed, image_size=(64, 64))
 
 # Split the dataset into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = split_data(X, y)
 
 # Define the CNN architecture
+num_classes = len(np.unique(y))
 model = Sequential([
-    Conv2D(32, (3, 3), activation='relu', input_shape=(image_size[0], image_size[1], 3)),
+    Conv2D(32, (3, 3), activation='relu', input_shape=X_train.shape[1:]),
     MaxPooling2D((2, 2)),
     Conv2D(64, (3, 3), activation='relu'),
     MaxPooling2D((2, 2)),
@@ -27,11 +27,11 @@ model = Sequential([
     MaxPooling2D((2, 2)),
     Flatten(),
     Dense(128, activation='relu'),
-    Dense(1, activation='sigmoid')
+    Dense(num_classes, activation='softmax')
 ])
 
 # Compile the model
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 # Data augmentation
 datagen = ImageDataGenerator(
@@ -43,13 +43,15 @@ datagen = ImageDataGenerator(
     horizontal_flip=True
 )
 
-# Train the model
+# Apply data augmentation to the training data
 train_generator = datagen.flow(X_train, y_train, batch_size=32)
+
+# Train the model
 model.fit(train_generator, steps_per_epoch=len(X_train) // 32, epochs=10)
 
 # Evaluate the model
 predictions = model.predict(X_test)
-predictions = (predictions > 0.5).astype(int)
+predictions = np.argmax(predictions, axis=1)
 
 # Calculate evaluation metrics
 accuracy, precision, recall, f1, conf_matrix = evaluate_model(y_test, predictions)
@@ -62,5 +64,5 @@ print("Confusion Matrix:")
 print(conf_matrix)
 
 # Save the model for later use
-model.save("cnn_ph2_model.keras")
-print("Model saved as cnn_ph2_model.keras")
+model.save(f"cnn_model_{subset_size}.keras")
+print(f"Model saved as cnn_model_{subset_size}.keras in Keras")
