@@ -28,7 +28,7 @@ def load_dataset(data_dir, metadata_path, subset_size, use_preprocessed, image_s
     return X, y, label_encoder
 
 def prompt_user():
-    subset_size = int(input("Enter the subset size (100, 1000, 5000, 10000): "))
+    subset_size = int(input("Enter the subset size (100, 600, 1600, 3100, 5100, 7600, 10000, 10015): "))
     use_preprocessed = input("Use preprocessed data? (yes/no): ").lower() == "yes"
     return subset_size, use_preprocessed
 
