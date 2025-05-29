@@ -47,8 +47,8 @@ def predict():
         predicted_class = np.argmax(predictions, axis=1)[0]
         confidence_score = float(np.max(predictions))
 
-        # Map the predicted class to a label (assuming classes are 0: bkl, 1: df, 2: mel, 3: nv, 4: vasc, 5: bcc, 6: akiec.)
-        class_labels = ['bkl', 'df', 'mel', 'nv', 'vasc', 'bcc', 'akiec']  # Update this based on your model's classes
+        # Map the predicted class to a label (classes are 0: nv, 1: mel, 2: bkl, 3: bcc, 4: akiec, 5: vasc, 6: df.)
+        class_labels = ['nv', 'mel', 'bkl', 'bcc', 'akiec', 'vasc', 'df']  # Update this based on your model's classes
         predicted_label = class_labels[predicted_class]
 
         # Clean up the uploaded file
