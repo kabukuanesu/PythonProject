@@ -98,7 +98,7 @@ def load_and_preprocess_data(data_dir, metadata_path, subset_size, image_size, u
 def evaluate_model(y_test, predictions):
     accuracy = accuracy_score(y_test, predictions)
     precision = precision_score(y_test, predictions, average='macro', zero_division=0)
-    recall = recall_score(y_test, predictions, average='macro')
+    recall = recall_score(y_test, predictions, average='macro', zero_division=0)
     f1 = f1_score(y_test, predictions, average='macro')
     conf_matrix = confusion_matrix(y_test, predictions)
 
