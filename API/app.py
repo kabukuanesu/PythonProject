@@ -9,6 +9,7 @@ app = Flask(__name__)
 
 # Load the pre-trained model
 MODEL_PATH = "C://Users//Anesu Kabuku//PycharmProjects//PythonProject//API//model.keras"
+# MODEL_PATH = "C://Users//Anesu Kabuku//PycharmProjects//PythonProject//API//densenet_model_10000.keras"
 model = load_model(MODEL_PATH)
 
 # Define allowed file extensions
